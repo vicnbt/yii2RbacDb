@@ -73,6 +73,12 @@ class SiteController extends Controller
      */
     public function actionIndex()
     {
+//        $model = new LoginForm();
+//        $model->load(["LoginForm"=>["username"=>"v.nabatov@gmail5.com","password"=>"v.nabatov@gmail5.com"]]);
+//        $model->login();
+//            echo Yii::$app->user->can('updatePost')?"t":"f";
+//            exit;
+
         return $this->render('index');
     }
 
@@ -97,6 +103,7 @@ class SiteController extends Controller
         }
     }
 
+
     /**
      * Logs out the current user.
      *
@@ -116,6 +123,7 @@ class SiteController extends Controller
      */
     public function actionContact()
     {
+
         $model = new ContactForm();
         if ($model->load(Yii::$app->request->post()) && $model->validate()) {
             if ($model->sendEmail(Yii::$app->params['adminEmail'])) {

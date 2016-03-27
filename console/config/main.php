@@ -13,7 +13,9 @@ return [
     'controllerNamespace' => 'console\controllers',
     'components' => [
         'authManager' => [
-            'class' => 'yii\rbac\PhpManager',
+            'class' => 'yii\rbac\DbManager',
+            'defaultRoles' => [
+            ],
         ],
         'log' => [
             'targets' => [

@@ -3,56 +3,64 @@ namespace console\controllers;
 
 use Yii;
 use yii\console\Controller;
-use common\components\rbac\GroupRule;
-use yii\rbac\DbManager;
 
-/**
- * RBAC console controller.
- */
 class RbacController extends Controller
 {
-    /**
-     * Initial RBAC action
-     * @param integer $id Superadmin ID
-     */
-    public function actionInit($id = null)
+    public function actionInit()
     {
-        $auth = new DbManager;
-        $auth->init();
+        $auth = Yii::$app->authManager;
 
-        $auth->removeAll(); //удаляем старые данные
-        // Rules
-        $groupRule = new GroupRule();
+        // add "createPost" permission
+        $createPost = $auth->createPermission('createPost');
+        $createPost->description = 'Create a post';
+        $auth->add($createPost);
 
-        $auth->add($groupRule);
+        // add "updatePost" permission
+        $updatePost = $auth->createPermission('updatePost');
+        $updatePost->description = 'Update post';
+        $auth->add($updatePost);
 
-        // Roles
-        $user = $auth->createRole('user');
-        $user->description = 'User';
-        $user->ruleName = $groupRule->name;
-        $auth->add($user);
+        // add "onlyAdmin" permission
+        $onlyAdmin = $auth->createPermission('onlyAdmin');
+        $onlyAdmin->description = 'Only Admin';
+        $auth->add($onlyAdmin);
 
-        $moderator = $auth->createRole(' moderator ');
-        $moderator ->description = 'Moderator ';
-        $moderator ->ruleName = $groupRule->name;
-        $auth->add($moderator);
-        $auth->addChild($moderator, $user);
+        // add "author" role and give this role the "createPost" permission
+        $author = $auth->createRole('author');
+        $auth->add($author);
+        $auth->addChild($author, $createPost);
 
+
+        $auth = Yii::$app->authManager;
+
+// add the rule
+        $rule = new \console\models\AuthorRule;
+        $auth->add($rule);
+
+// add the "updateOwnPost" permission and associate the rule with it.
+        $updateOwnPost = $auth->createPermission('updateOwnPost');
+        $updateOwnPost->description = 'Update own post';
+        $updateOwnPost->ruleName = $rule->name;
+        $auth->add($updateOwnPost);
+
+// "updateOwnPost" will be used from "updatePost"
+        $auth->addChild($updateOwnPost, $updatePost);
+
+// allow "author" to update their own posts
+        $auth->addChild($author, $updateOwnPost);
+
+
+        // add "admin" role and give this role the "updatePost" permission
+        // as well as the permissions of the "author" role
         $admin = $auth->createRole('admin');
-        $admin->description = 'Admin';
-        $admin->ruleName = $groupRule->name;
         $auth->add($admin);
-        $auth->addChild($admin, $moderator);
+        $auth->addChild($admin, $updatePost);
+        $auth->addChild($admin, $onlyAdmin);
+//        $auth->addChild($admin, $author);
 
-        $superadmin = $auth->createRole('superadmin');
-        $superadmin->description = 'Superadmin';
-        $superadmin->ruleName = $groupRule->name;
-        $auth->add($superadmin);
-        $auth->addChild($superadmin, $admin);
-
-        // Superadmin assignments
-        if ($id !== null) {
-            $auth->assign($superadmin, $id);
-        }
+        // Assign roles to users. 1 and 2 are IDs returned by IdentityInterface::getId()
+        // usually implemented in your User model.
+        $auth->assign($author, 2);
+        $auth->assign($admin, 1);
     }
 }
